@@ -1,9 +1,1 @@
-[ {
-  "firstName" : "Media",
-  "lastName" : "Lab",
-  "username" : "medialab",
-  "password" : "medialab_2025",
-  "role" : "Admin",
-  "authorizedCategories" : [ ],
-  "followedDocuments" : [ ]
-} ]
+[ ]
