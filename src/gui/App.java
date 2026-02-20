@@ -59,54 +59,102 @@ public class App extends Application {
     }
 
     private void openDashboard(Stage stage) {
-    VBox layout = new VBox(15);
-    layout.setStyle("-fx-padding: 20;");
-    layout.setAlignment(Pos.TOP_CENTER);
+        // Τίτλος παραθύρου σύμφωνα με την εκφώνηση
+        stage.setTitle("MediaLab Documents");
 
-    Label welcomeLabel = new Label("Σύστημα Θεατρικών Έργων | Χρήστης: " + loggedInUser.getFirstName());
-    welcomeLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        // ==========================================
+        // ΜΕΡΟΣ 1: Συγκεντρωτικές Πληροφορίες (Πάνω)
+        // ==========================================
+        VBox statsBox = new VBox(10);
+        statsBox.setStyle("-fx-padding: 15; -fx-background-color: #e8e8e8; -fx-border-color: #cccccc; -fx-border-width: 0 0 2 0;");
+        
+        Label statsTitle = new Label("Συγκεντρωτικές Πληροφορίες");
+        statsTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        
+        // Υπολογισμός των 3 στατιστικών που ζητάει η εκφώνηση
+        int totalCats = dataManager.getCategories().size();
+        int totalDocs = dataManager.getDocuments().size();
+        int followedDocs = loggedInUser.getFollowedDocuments().size();
 
-    
-    TableView<Document> table = new TableView<>();
-    
-    TableColumn<Document, String> titleCol = new TableColumn<>("Τίτλος Έργου");
-    titleCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("title"));
-    
-    TableColumn<Document, String> authorCol = new TableColumn<>("Συγγραφέας");
-    authorCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("authorName"));
+        Label totalCatsLabel = new Label("• Συνολικές Κατηγορίες Συστήματος: " + totalCats);
+        Label totalDocsLabel = new Label("• Συνολικά Έγγραφα Συστήματος: " + totalDocs);
+        Label followedDocsLabel = new Label("• Έγγραφα που παρακολουθείτε: " + followedDocs);
+        
+        statsBox.getChildren().addAll(statsTitle, totalCatsLabel, totalDocsLabel, followedDocsLabel);
 
-    table.getColumns().addAll(titleCol, authorCol);
-    
-    
-    javafx.collections.ObservableList<Document> masterData = 
-        javafx.collections.FXCollections.observableArrayList(dataManager.getDocuments());
-    table.setItems(masterData);
+      
+        VBox mainContentBox = new VBox(15);
+        mainContentBox.setStyle("-fx-padding: 20;");
+        
+        Label welcomeLabel = new Label("Χρήστης: " + loggedInUser.getFirstName() + " (" + loggedInUser.getRole() + ")");
+        welcomeLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-    
-    TextField searchField = new TextField();
-    searchField.setPromptText("Αναζήτηση ανά τίτλο ή συγγραφέα...");
-    searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-        javafx.collections.transformation.FilteredList<Document> filteredData = new javafx.collections.transformation.FilteredList<>(masterData, p -> true);
-        filteredData.setPredicate(doc -> {
-            if (newValue == null || newValue.isEmpty()) return true;
-            String lowerCaseFilter = newValue.toLowerCase();
-            return doc.getTitle().toLowerCase().contains(lowerCaseFilter) || 
-                   doc.getAuthorName().toLowerCase().contains(lowerCaseFilter);
+        
+        TextField searchField = new TextField();
+        searchField.setPromptText("Αναζήτηση ανά τίτλο ή συγγραφέα...");
+
+        
+        TableView<Document> table = new TableView<>();
+        
+        TableColumn<Document, String> titleCol = new TableColumn<>("Τίτλος Έργου");
+        titleCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("title"));
+        titleCol.setPrefWidth(200);
+        
+        TableColumn<Document, String> authorCol = new TableColumn<>("Συγγραφέας");
+        authorCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("authorName"));
+        authorCol.setPrefWidth(150);
+
+        TableColumn<Document, String> categoryCol = new TableColumn<>("Κατηγορία");
+        categoryCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("category"));
+        categoryCol.setPrefWidth(150);
+
+        table.getColumns().addAll(titleCol, authorCol, categoryCol);
+        
+        
+        javafx.collections.ObservableList<Document> masterData = 
+            javafx.collections.FXCollections.observableArrayList(dataManager.getDocuments());
+        table.setItems(masterData);
+
+        
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            javafx.collections.transformation.FilteredList<Document> filteredData = new javafx.collections.transformation.FilteredList<>(masterData, p -> true);
+            filteredData.setPredicate(doc -> {
+                if (newValue == null || newValue.isEmpty()) return true;
+                String lowerCaseFilter = newValue.toLowerCase();
+                return doc.getTitle().toLowerCase().contains(lowerCaseFilter) || 
+                       doc.getAuthorName().toLowerCase().contains(lowerCaseFilter);
+            });
+            table.setItems(filteredData);
         });
-        table.setItems(filteredData);
-    });
 
-    layout.getChildren().addAll(welcomeLabel, new Label("Αναζήτηση:"), searchField, table);
+        mainContentBox.getChildren().addAll(welcomeLabel, new Label("Αναζήτηση Εγγράφων:"), searchField, table);
 
-    
-    if (loggedInUser.getRole().equals("Admin")) {
-        Button adminBtn = new Button("Διαχείριση Χρηστών & Κατηγοριών");
-        layout.getChildren().add(adminBtn);
+        
+        javafx.scene.layout.HBox buttonBox = new javafx.scene.layout.HBox(10);
+        
+        Button readBtn = new Button("Ανάγνωση (Προβολή)");
+        buttonBox.getChildren().add(readBtn);
+
+        if (loggedInUser.getRole().equals("Admin") || loggedInUser.getRole().equals("Author")) {
+            Button editBtn = new Button("Επεξεργασία (Νέα Έκδοση)");
+            buttonBox.getChildren().add(editBtn);
+        }
+        
+        if (loggedInUser.getRole().equals("Admin")) {
+            Button adminBtn = new Button("Διαχείριση Συστήματος (Admin)");
+            buttonBox.getChildren().add(adminBtn);
+        }
+        
+        mainContentBox.getChildren().add(buttonBox);
+
+       
+        javafx.scene.layout.BorderPane root = new javafx.scene.layout.BorderPane();
+        root.setTop(statsBox);       
+        root.setCenter(mainContentBox); 
+
+        Scene scene = new Scene(root, 800, 600);
+        stage.setScene(scene);
     }
-
-    Scene scene = new Scene(layout, 800, 500);
-    stage.setScene(scene);
-}
 
     @Override
     public void stop() {
