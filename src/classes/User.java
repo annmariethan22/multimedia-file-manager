@@ -55,4 +55,5 @@ public class User {
         if (this.role.equals("Admin")) return true;
         return authorizedCategories.contains(categoryName);
     }
+    public User() {} 
 }

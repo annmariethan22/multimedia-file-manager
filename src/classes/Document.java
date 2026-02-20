@@ -44,7 +44,7 @@ public class Document {
             return new ArrayList<>(versions.subList(total - 3, total));
         }
     }
-
+    public Document() {} 
     
     public String getTitle() { return title; }
     public String getAuthorName() { return authorName; }

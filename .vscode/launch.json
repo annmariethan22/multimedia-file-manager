@@ -1,0 +1,13 @@
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch App",
+            "request": "launch",
+            "mainClass": "gui.App",
+            "vmArgs": "--module-path /home/annmarie/Documents/HMMY/MultimediaTechnology/multimedia-file-manager/javafx-sdk-17.0.10/lib --add-modules javafx.controls,javafx.fxml"
+        }
+    ]
+}
