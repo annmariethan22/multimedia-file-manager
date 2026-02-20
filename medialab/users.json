@@ -1,9 +1,30 @@
-[ {
-  "firstName" : "Media",
-  "lastName" : "Lab",
-  "username" : "medialab",
-  "password" : "medialab_2025",
-  "role" : "Admin",
-  "authorizedCategories" : [ ],
-  "followedDocuments" : [ ]
-} ]
+
+[
+  {
+    "firstName": "Media",
+    "lastName": "Lab",
+    "username": "medialab",
+    "password": "medialab_2025",
+    "role": "Admin",
+    "authorizedCategories": [],
+    "followedDocuments": []
+  },
+  {
+    "firstName": "Ελπίς",
+    "lastName": "Συγγραφέας",
+    "username": "author1",
+    "password": "123",
+    "role": "Author",
+    "authorizedCategories": ["Αρχαία Τραγωδία", "Κωμωδία"],
+    "followedDocuments": []
+  },
+  {
+    "firstName": "Μελπωμένη",
+    "lastName": "Αναγνώστης",
+    "username": "user1",
+    "password": "123",
+    "role": "Simple User",
+    "authorizedCategories": ["Αρχαία Τραγωδία"],
+    "followedDocuments": ["Αντιγόνη"]
+  }
+]
