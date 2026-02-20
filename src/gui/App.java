@@ -28,22 +28,14 @@ public class App extends Application {
         Button loginBtn = new Button("Είσοδος");
 
         loginBtn.setOnAction(e -> {
-            String username = userField.getText();
-            String password = passField.getText();
+    LoginController controller = new LoginController(dataManager);
+    loggedInUser = controller.handleLogin(userField.getText(), passField.getText());
 
-            // isuser
-            loggedInUser = dataManager.getUsers().stream()
-                .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
-                .findFirst()
-                .orElse(null);
-
-            if (loggedInUser != null) {
-                System.out.println("Επιτυχής είσοδος: " + loggedInUser.getRole());
-                openDashboard(primaryStage); // Μετάβαση στο Dashboard
-            } else {
-                new Alert(Alert.AlertType.ERROR, "Λάθος στοιχεία!").show();
-            }
-        });
+    if (loggedInUser != null) {
+        openDashboard(primaryStage);
+    }
+    
+});
 
         VBox layout = new VBox(10, label, userField, passField, loginBtn);
         layout.setAlignment(Pos.CENTER);
@@ -54,18 +46,54 @@ public class App extends Application {
     }
 
     private void openDashboard(Stage stage) {
-        
-        Label welcomeLabel = new Label("Καλώς ήρθατε, " + loggedInUser.getFirstName());
-        VBox layout = new VBox(20, welcomeLabel);
-        
-        // Αν είναι Admin, πρόσθεσε κουμπί διαχείρισης χρηστών
-        if (loggedInUser.getRole().equals("Admin")) {
-            layout.getChildren().add(new Button("Διαχείριση Χρηστών"));
-        }
+    VBox layout = new VBox(15);
+    layout.setStyle("-fx-padding: 20;");
+    layout.setAlignment(Pos.TOP_CENTER);
 
-        Scene scene = new Scene(layout, 600, 400);
-        stage.setScene(scene);
+    Label welcomeLabel = new Label("Σύστημα Θεατρικών Έργων | Χρήστης: " + loggedInUser.getFirstName());
+    welcomeLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+    
+    TableView<Document> table = new TableView<>();
+    
+    TableColumn<Document, String> titleCol = new TableColumn<>("Τίτλος Έργου");
+    titleCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("title"));
+    
+    TableColumn<Document, String> authorCol = new TableColumn<>("Συγγραφέας");
+    authorCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("authorName"));
+
+    table.getColumns().addAll(titleCol, authorCol);
+    
+    
+    javafx.collections.ObservableList<Document> masterData = 
+        javafx.collections.FXCollections.observableArrayList(dataManager.getDocuments());
+    table.setItems(masterData);
+
+    
+    TextField searchField = new TextField();
+    searchField.setPromptText("Αναζήτηση ανά τίτλο ή συγγραφέα...");
+    searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+        javafx.collections.transformation.FilteredList<Document> filteredData = new javafx.collections.transformation.FilteredList<>(masterData, p -> true);
+        filteredData.setPredicate(doc -> {
+            if (newValue == null || newValue.isEmpty()) return true;
+            String lowerCaseFilter = newValue.toLowerCase();
+            return doc.getTitle().toLowerCase().contains(lowerCaseFilter) || 
+                   doc.getAuthorName().toLowerCase().contains(lowerCaseFilter);
+        });
+        table.setItems(filteredData);
+    });
+
+    layout.getChildren().addAll(welcomeLabel, new Label("Αναζήτηση:"), searchField, table);
+
+    
+    if (loggedInUser.getRole().equals("Admin")) {
+        Button adminBtn = new Button("Διαχείριση Χρηστών & Κατηγοριών");
+        layout.getChildren().add(adminBtn);
     }
+
+    Scene scene = new Scene(layout, 800, 500);
+    stage.setScene(scene);
+}
 
     @Override
     public void stop() {
