@@ -8,6 +8,19 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import services.DataManager;
 import classes.User;
+import classes.Document;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TextField;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import classes.Category;
+
 
 public class App extends Application {
     private DataManager dataManager = new DataManager();
