@@ -12,7 +12,6 @@ public class LoginController {
         this.dataManager = dataManager;
     }
 
-    
     public User handleLogin(String username, String password) {
         
         User user = dataManager.getUsers().stream()
@@ -24,18 +23,10 @@ public class LoginController {
             System.out.println("Επιτυχής σύνδεση: " + user.getRole());
             return user;
         } else {
+            
             showError("Σφάλμα Σύνδεσης", "Λάθος όνομα χρήστη ή κωδικός πρόσβασης.");
             return null;
         }
-        
-}
-public User handleLogin(String username, String password) {
-    
-    return dataManager.getUsers().stream()
-            .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
-            .findFirst()
-            .orElse(null); 
-}
     }
 
     private void showError(String title, String message) {
