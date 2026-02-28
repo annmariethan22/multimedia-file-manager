@@ -6,7 +6,7 @@ import javafx.scene.control.Alert.AlertType;
 import services.DataManager;
 
 public class LoginController {
-    private DataManager dataManager;
+    private final DataManager dataManager;
 
     public LoginController(DataManager dataManager) {
         this.dataManager = dataManager;

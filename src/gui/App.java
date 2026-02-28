@@ -27,7 +27,7 @@ import services.DataManager;
 
 
 public class App extends javafx.application.Application {
-    private DataManager dataManager = new DataManager();
+    private final DataManager dataManager = new DataManager();
     private User loggedInUser;
 
     @Override
@@ -52,9 +52,24 @@ public class App extends javafx.application.Application {
                 StringBuilder notifications = new StringBuilder();
                 for (String followedTitle : loggedInUser.getFollowedDocuments()) {
                     for (Document doc : dataManager.getDocuments()) {
-                        if (doc.getTitle().equals(followedTitle) && doc.getCurrentVersionNumber() > 1) {
+                        if (doc.getTitle().equals(followedTitle)) {
+                            int lastSeenVersion = loggedInUser.getSeenVersionForDocument(followedTitle);
+
+                            if (lastSeenVersion == 0) {
+                                
+                                loggedInUser.updateSeenVersionForDocument(followedTitle, doc.getCurrentVersionNumber());
+                                continue;
+                            }
+
+                            if (doc.getCurrentVersionNumber() <= lastSeenVersion) {
+                                continue;
+                            }
+ {
                             notifications.append("• ").append(followedTitle)
-                                         .append(" (Νέα Έκδοση: v").append(doc.getCurrentVersionNumber()).append(")\n");
+                                         .append(" (Νέα Έκδοση: v").append(doc.getCurrentVersionNumber())
+                                         .append(", προηγούμενη που είδατε: v").append(lastSeenVersion).append(")\n");
+                            loggedInUser.updateSeenVersionForDocument(followedTitle, doc.getCurrentVersionNumber());
+
                         }
                     }
                 }
@@ -69,6 +84,7 @@ public class App extends javafx.application.Application {
         openDashboard(primaryStage);
     }
     
+ }
 });
 
         VBox layout = new VBox(10, label, userField, passField, loginBtn);
@@ -241,9 +257,11 @@ public class App extends javafx.application.Application {
 
             if (userFollows.contains(docTitle)) {
                 userFollows.remove(docTitle);
+                loggedInUser.removeSeenVersionForDocument(docTitle);
                 new Alert(Alert.AlertType.INFORMATION, "Σταματήσατε να παρακολουθείτε το: " + docTitle).showAndWait();
             } else {
                 userFollows.add(docTitle);
+                loggedInUser.updateSeenVersionForDocument(docTitle, selectedDoc.getCurrentVersionNumber());
                 new Alert(Alert.AlertType.INFORMATION, "Ξεκινήσατε να παρακολουθείτε το: " + docTitle).showAndWait();
             }
             
@@ -389,6 +407,7 @@ public class App extends javafx.application.Application {
                             if (u.getFollowedDocuments() != null) {
                                 u.getFollowedDocuments().remove(selectedDoc.getTitle());
                             }
+                            u.removeSeenVersionForDocument(selectedDoc.getTitle());
                         }
                         
                       
@@ -695,6 +714,7 @@ public class App extends javafx.application.Application {
                         for (Document delDoc : toDelete) {
                             for (User u : dataManager.getUsers()) {
                                 if (u.getFollowedDocuments() != null) u.getFollowedDocuments().remove(delDoc.getTitle());
+                                u.removeSeenVersionForDocument(delDoc.getTitle());
                             }
                         }
                        

@@ -1,7 +1,9 @@
 package classes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class User {
     private String firstName;
@@ -15,6 +17,7 @@ public class User {
     
     
     private List<String> followedDocuments;
+    private Map<String, Integer> lastSeenDocumentVersions;
 
     
     public User(String firstName, String lastName, String username, String password, String role) {
@@ -25,6 +28,7 @@ public class User {
         this.role = role;
         this.authorizedCategories = new ArrayList<>();
         this.followedDocuments = new ArrayList<>();
+        this.lastSeenDocumentVersions = new HashMap<>();
     }
 
     
@@ -49,6 +53,26 @@ public class User {
     public String getLastName() { return lastName; }
     public List<String> getAuthorizedCategories() { return authorizedCategories; }
     public List<String> getFollowedDocuments() { return followedDocuments; }
+    public Map<String, Integer> getLastSeenDocumentVersions() {
+        if (lastSeenDocumentVersions == null) {
+            lastSeenDocumentVersions = new HashMap<>();
+        }
+        return lastSeenDocumentVersions;
+    }
+
+    public int getSeenVersionForDocument(String documentTitle) {
+        Integer version = getLastSeenDocumentVersions().get(documentTitle);
+        return version == null ? 0 : version;
+    }
+
+    public void updateSeenVersionForDocument(String documentTitle, int version) {
+        getLastSeenDocumentVersions().put(documentTitle, version);
+    }
+
+    public void removeSeenVersionForDocument(String documentTitle) {
+        getLastSeenDocumentVersions().remove(documentTitle);
+    }
+
 
     // ελεγχος δικαιωματος σε κατηγορια
     public boolean hasAccessToCategory(String categoryName) {
@@ -64,5 +88,10 @@ public class User {
     public void setRole(String role) { this.role = role; }
     public void setAuthorizedCategories(List<String> authorizedCategories) { this.authorizedCategories = authorizedCategories; }
     public void setFollowedDocuments(List<String> followedDocuments) { this.followedDocuments = followedDocuments; }
+    public void setLastSeenDocumentVersions(Map<String, Integer> lastSeenDocumentVersions) {
+        this.lastSeenDocumentVersions = (lastSeenDocumentVersions == null) ? new HashMap<>() : lastSeenDocumentVersions;
+    }
+
     public User() {} 
+
 }

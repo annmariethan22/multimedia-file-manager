@@ -1,11 +1,16 @@
 package services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import classes.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import classes.Category;
+import classes.Document;
+import classes.User;
 
 public class DataManager {
     private List<User> users = new ArrayList<>();
@@ -13,7 +18,7 @@ public class DataManager {
     private List<Category> categories = new ArrayList<>();
     
     private final String FOLDER_PATH = "medialab/";
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     
     public void loadData() {
@@ -40,7 +45,7 @@ public class DataManager {
             // υπαρχει admin medialab
             checkAndCreateDefaultAdmin();
             
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.err.println("Σφάλμα κατά τη φόρτωση: " + e.getMessage());
         }
     }
@@ -52,7 +57,7 @@ public class DataManager {
             mapper.writerWithDefaultPrettyPrinter().writeValue(new File(FOLDER_PATH + "categories.json"), categories);
             mapper.writerWithDefaultPrettyPrinter().writeValue(new File(FOLDER_PATH + "documents.json"), documents);
             System.out.println("Τα δεδομένα αποθηκεύτηκαν επιτυχώς στο " + FOLDER_PATH);
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.err.println("Σφάλμα κατά την αποθήκευση: " + e.getMessage());
         }
     }
