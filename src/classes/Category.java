@@ -3,7 +3,7 @@ package classes;
 public class Category {
     private String name;
 
-    // [cite: 35]
+    
     public Category(String name) {
         this.name = name;
     }
