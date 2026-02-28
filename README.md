@@ -67,8 +67,7 @@ git add .gitattributes
 # recommit large files as LFS
 ```
 
-**Files I modified while working**
+**Files modified**
 - [pom.xml](pom.xml): added JUnit test dependencies and `maven-surefire-plugin` to run tests.
 - Added tests under `src/test/java/` for `Category`, `User`, `Document`, and `DataManager`.
 
-If you want, I can now remove the local SDK files from the repository history or convert them to Git LFS—which would you prefer?
