@@ -2,41 +2,33 @@ package gui;
 
 import classes.Document;
 import classes.User;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import services.DataManager;
+import services.DocumentService;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class App extends javafx.application.Application {
-    private DataManager dataManager = new DataManager();
+    private final DataManager dataManager = new DataManager();
+    private final DocumentService documentService = new DocumentService();
     private User loggedInUser;
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
-        dataManager.loadData(); 
+    public void start(Stage primaryStage) {
+        dataManager.loadData();
 
         primaryStage.setTitle("Θεατρικό Σύστημα - Είσοδος");
 
-        // login
         Label label = new Label("Σύνδεση Χρήστη");
         TextField userField = new TextField();
         userField.setPromptText("Όνομα χρήστη");
@@ -45,80 +37,89 @@ public class App extends javafx.application.Application {
         Button loginBtn = new Button("Είσοδος");
 
         loginBtn.setOnAction(e -> {
-    LoginController controller = new LoginController(dataManager);
-    loggedInUser = controller.handleLogin(userField.getText(), passField.getText());
+            LoginController controller = new LoginController(dataManager);
+            loggedInUser = controller.handleLogin(userField.getText(), passField.getText());
 
-    if (loggedInUser != null) {
-                StringBuilder notifications = new StringBuilder();
-                for (String followedTitle : loggedInUser.getFollowedDocuments()) {
-                    for (Document doc : dataManager.getDocuments()) {
-                        if (doc.getTitle().equals(followedTitle) && doc.getCurrentVersionNumber() > 1) {
-                            notifications.append("• ").append(followedTitle)
-                                         .append(" (Νέα Έκδοση: v").append(doc.getCurrentVersionNumber()).append(")\n");
-                        }
-                    }
-                }
-
-                if (notifications.length() > 0) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Ειδοποιήσεις Συστήματος");
-                    alert.setHeaderText("Έγγραφα που παρακολουθείτε ενημερώθηκαν!");
-                    alert.setContentText(notifications.toString());
-                    alert.showAndWait();
-                }
-        openDashboard(primaryStage);
-    }
-    
-});
+            if (loggedInUser != null) {
+                showUpdateNotificationsIfNeeded();
+                openDashboard(primaryStage);
+            }
+        });
 
         VBox layout = new VBox(10, label, userField, passField, loginBtn);
         layout.setAlignment(Pos.CENTER);
         Scene scene = new Scene(layout, 350, 250);
-        
+
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
+    private void showUpdateNotificationsIfNeeded() {
+        StringBuilder notifications = new StringBuilder();
+
+        for (String followedTitle : loggedInUser.getFollowedDocuments()) {
+            Document doc = dataManager.getDocuments().stream()
+                    .filter(d -> d.getTitle().equals(followedTitle))
+                    .findFirst()
+                    .orElse(null);
+
+            if (doc == null) {
+                continue;
+            }
+
+            int lastSeen = loggedInUser.getLastSeenVersionForDocument(followedTitle);
+            if (doc.getCurrentVersionNumber() > lastSeen) {
+                notifications.append("• ").append(followedTitle)
+                        .append(" (Τελευταία: v").append(doc.getCurrentVersionNumber())
+                        .append(", έχετε δει: v").append(lastSeen).append(")\n");
+            }
+        }
+
+        if (notifications.length() > 0) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Ειδοποιήσεις Συστήματος");
+            alert.setHeaderText("Έγγραφα που παρακολουθείτε ενημερώθηκαν!");
+            alert.setContentText(notifications.toString());
+            alert.showAndWait();
+        }
+    }
+
     private void openDashboard(Stage stage) {
-        
         stage.setTitle("MediaLab Documents");
 
-        
         VBox statsBox = new VBox(10);
         statsBox.setStyle("-fx-padding: 15; -fx-background-color: #e8e8e8; -fx-border-color: #cccccc; -fx-border-width: 0 0 2 0;");
-        
+
         Label statsTitle = new Label("Συγκεντρωτικές Πληροφορίες");
         statsTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
-        
-        
-        int totalCats = dataManager.getCategories().size();
-        int totalDocs = dataManager.getDocuments().size();
-        int followedDocs = loggedInUser.getFollowedDocuments().size();
 
-        Label totalCatsLabel = new Label("• Συνολικές Κατηγορίες Συστήματος: " + totalCats);
-        Label totalDocsLabel = new Label("• Συνολικά Έγγραφα Συστήματος: " + totalDocs);
-        Label followedDocsLabel = new Label("• Έγγραφα που παρακολουθείτε: " + followedDocs);
-        
+        Label totalCatsLabel = new Label();
+        Label totalDocsLabel = new Label();
+        Label followedDocsLabel = new Label();
+
+        Runnable refreshStats = () -> {
+            totalCatsLabel.setText("• Συνολικές Κατηγορίες Συστήματος: " + dataManager.getCategories().size());
+            totalDocsLabel.setText("• Συνολικά Έγγραφα Συστήματος: " + dataManager.getDocuments().size());
+            followedDocsLabel.setText("• Έγγραφα που παρακολουθείτε: " + loggedInUser.getFollowedDocuments().size());
+        };
+        refreshStats.run();
+
         statsBox.getChildren().addAll(statsTitle, totalCatsLabel, totalDocsLabel, followedDocsLabel);
 
-      
         VBox mainContentBox = new VBox(15);
         mainContentBox.setStyle("-fx-padding: 20;");
-        
+
         Label welcomeLabel = new Label("Χρήστης: " + loggedInUser.getFirstName() + " (" + loggedInUser.getRole() + ")");
         welcomeLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-        
         TextField searchField = new TextField();
-        searchField.setPromptText("Αναζήτηση ανά τίτλο ή συγγραφέα...");
+        searchField.setPromptText("Αναζήτηση ανά τίτλο ή συγγραφέα ή κατηγορία...");
 
-        
         TableView<Document> table = new TableView<>();
-        
         TableColumn<Document, String> titleCol = new TableColumn<>("Τίτλος Έργου");
         titleCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("title"));
         titleCol.setPrefWidth(200);
-        
+
         TableColumn<Document, String> authorCol = new TableColumn<>("Συγγραφέας");
         authorCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("authorName"));
         authorCol.setPrefWidth(150);
@@ -127,7 +128,6 @@ public class App extends javafx.application.Application {
         categoryCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("category"));
         categoryCol.setPrefWidth(130);
 
-        
         TableColumn<Document, String> dateCol = new TableColumn<>("Ημερομηνία");
         dateCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("creationDate"));
         dateCol.setPrefWidth(100);
@@ -136,99 +136,68 @@ public class App extends javafx.application.Application {
         versionCol.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("currentVersionNumber"));
         versionCol.setPrefWidth(70);
 
-        @SuppressWarnings("unchecked")
-        TableColumn<Document, ?>[] columns = new TableColumn[] { titleCol, authorCol, categoryCol, dateCol, versionCol };
-        table.getColumns().addAll(columns);
-        
-        
-        
-        javafx.collections.ObservableList<Document> masterData = javafx.collections.FXCollections.observableArrayList();
-        
-        for (Document doc : dataManager.getDocuments()) {
-            if (loggedInUser.getRole().equals("Admin")) {
-                
-                masterData.add(doc);
-            } else {
-                
-                if (loggedInUser.getAuthorizedCategories() != null && loggedInUser.getAuthorizedCategories().contains(doc.getCategory())) {
+        table.getColumns().addAll(titleCol, authorCol, categoryCol, dateCol, versionCol);
+
+        ObservableList<Document> masterData = FXCollections.observableArrayList();
+        Runnable refreshDocumentTable = () -> {
+            masterData.clear();
+            for (Document doc : dataManager.getDocuments()) {
+                if ("Admin".equals(loggedInUser.getRole())) {
+                    masterData.add(doc);
+                } else if (loggedInUser.getAuthorizedCategories() != null &&
+                        loggedInUser.getAuthorizedCategories().contains(doc.getCategory())) {
                     masterData.add(doc);
                 }
             }
-        }
-        
-        table.setItems(masterData);
-        
+        };
+        refreshDocumentTable.run();
 
-        
+        FilteredList<Document> filteredData = new FilteredList<>(masterData, p -> true);
+        table.setItems(filteredData);
+
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            javafx.collections.transformation.FilteredList<Document> filteredData = new javafx.collections.transformation.FilteredList<>(masterData, p -> true);
+            String filter = newValue == null ? "" : newValue.toLowerCase();
             filteredData.setPredicate(doc -> {
-                if (newValue == null || newValue.isEmpty()) return true;
-                String lowerCaseFilter = newValue.toLowerCase();
-                return doc.getTitle().toLowerCase().contains(lowerCaseFilter) || 
-                       doc.getAuthorName().toLowerCase().contains(lowerCaseFilter) ||
-                       doc.getCategory().toLowerCase().contains(lowerCaseFilter);
+                if (filter.isEmpty()) return true;
+                return doc.getTitle().toLowerCase().contains(filter)
+                        || doc.getAuthorName().toLowerCase().contains(filter)
+                        || doc.getCategory().toLowerCase().contains(filter);
             });
-            table.setItems(filteredData);
         });
 
-        mainContentBox.getChildren().addAll(welcomeLabel, new Label("Αναζήτηση Εγγράφων:"), searchField, table);
+        HBox buttonBox = new HBox(10);
 
-        
-        javafx.scene.layout.HBox buttonBox = new javafx.scene.layout.HBox(10);
-        
         Button readBtn = new Button("Ανάγνωση (Προβολή)");
         readBtn.setOnAction(e -> {
-            
             Document selectedDoc = table.getSelectionModel().getSelectedItem();
-            
             if (selectedDoc == null) {
-                
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Προσοχή");
-                alert.setHeaderText(null);
-                alert.setContentText("Παρακαλώ επιλέξτε ένα έργο από τον πίνακα για ανάγνωση!");
-                alert.showAndWait();
+                new Alert(Alert.AlertType.WARNING, "Παρακαλώ επιλέξτε ένα έργο από τον πίνακα για ανάγνωση!").showAndWait();
                 return;
             }
 
-            
-            Alert info = new Alert(Alert.AlertType.INFORMATION);
-            info.setTitle("Ανάγνωση: " + selectedDoc.getTitle());
-            info.setHeaderText("Συγγραφέας: " + selectedDoc.getAuthorName() + " | Κατηγορία: " + selectedDoc.getCategory() + "\nΗμερομηνία Δημιουργίας: " + selectedDoc.getCreationDate() + " | Τρέχουσα Έκδοση: v" + selectedDoc.getCurrentVersionNumber());
-            
-            StringBuilder contentToDisplay = new StringBuilder();
-            java.util.List<String> allVersions = selectedDoc.getVersions();
-            
-            if (allVersions == null || allVersions.isEmpty()) {
-                contentToDisplay.append("Δεν υπάρχει κείμενο για αυτό το έργο.");
-            } else {
-               
-                if (loggedInUser.getRole().equals("Simple User")) {
-                    contentToDisplay.append("--- Τρέχουσα Έκδοση (v").append(selectedDoc.getCurrentVersionNumber()).append(") ---\n");
-                    contentToDisplay.append(allVersions.get(allVersions.size() - 1));
-                } else {
-                    
-                    int start = Math.max(0, allVersions.size() - 3);
-                    for (int i = allVersions.size() - 1; i >= start; i--) {
-                        contentToDisplay.append("=== Έκδοση v").append(i + 1).append(" ===\n");
-                        contentToDisplay.append(allVersions.get(i)).append("\n\n");
-                    }
-                }
-            }
-            
-            
-            info.setContentText(contentToDisplay.toString());
-            info.getDialogPane().setMinHeight(javafx.scene.layout.Region.USE_PREF_SIZE);
-            info.getDialogPane().setMinWidth(500);
-            
-            info.showAndWait();
+            showDocumentReadDialog(selectedDoc);
+            loggedInUser.markDocumentVersionAsSeen(selectedDoc.getTitle(), selectedDoc.getCurrentVersionNumber());
         });
         buttonBox.getChildren().add(readBtn);
-        
-        Button followBtn = new Button(" Παρακολούθηση");
+
+        Button followBtn = new Button("Παρακολούθηση/Κατάργηση");
         buttonBox.getChildren().add(followBtn);
-        
+
+        ListView<String> watchListView = new ListView<>();
+        watchListView.setPrefHeight(160);
+        watchListView.setPlaceholder(new Label("Δεν παρακολουθείτε κάποιο έγγραφο."));
+
+        Runnable refreshWatchList = () -> {
+            watchListView.getItems().clear();
+            for (String title : loggedInUser.getFollowedDocuments()) {
+                Document d = dataManager.getDocuments().stream().filter(doc -> doc.getTitle().equals(title)).findFirst().orElse(null);
+                if (d != null) {
+                    watchListView.getItems().add(title + " (τρέχουσα v" + d.getCurrentVersionNumber() + ")");
+                }
+            }
+        };
+        refreshWatchList.run();
+
         followBtn.setOnAction(e -> {
             Document selectedDoc = table.getSelectionModel().getSelectedItem();
             if (selectedDoc == null) {
@@ -237,24 +206,25 @@ public class App extends javafx.application.Application {
             }
 
             String docTitle = selectedDoc.getTitle();
-            java.util.List<String> userFollows = loggedInUser.getFollowedDocuments();
+            List<String> userFollows = loggedInUser.getFollowedDocuments();
 
             if (userFollows.contains(docTitle)) {
-                userFollows.remove(docTitle);
+                loggedInUser.unfollowDocument(docTitle);
                 new Alert(Alert.AlertType.INFORMATION, "Σταματήσατε να παρακολουθείτε το: " + docTitle).showAndWait();
             } else {
-                userFollows.add(docTitle);
+                loggedInUser.followDocument(docTitle);
+                loggedInUser.markDocumentVersionAsSeen(docTitle, selectedDoc.getCurrentVersionNumber());
                 new Alert(Alert.AlertType.INFORMATION, "Ξεκινήσατε να παρακολουθείτε το: " + docTitle).showAndWait();
             }
-            
-            followedDocsLabel.setText("• Έγγραφα που παρακολουθείτε: " + userFollows.size());
+
+            refreshStats.run();
+            refreshWatchList.run();
         });
 
-        if (loggedInUser.getRole().equals("Admin") || loggedInUser.getRole().equals("Author")) {
-            
+        if ("Admin".equals(loggedInUser.getRole()) || "Author".equals(loggedInUser.getRole())) {
             Button editBtn = new Button("Επεξεργασία (Νέα Έκδοση)");
             buttonBox.getChildren().add(editBtn);
-            
+
             editBtn.setOnAction(e -> {
                 Document selectedDoc = table.getSelectionModel().getSelectedItem();
                 if (selectedDoc == null) {
@@ -264,82 +234,77 @@ public class App extends javafx.application.Application {
 
                 Dialog<String> dialog = new Dialog<>();
                 dialog.setTitle("Νέα Έκδοση: " + selectedDoc.getTitle());
-                dialog.setHeaderText("Επεξεργασία Έργου. Η τρέχουσα έκδοση είναι η v" + selectedDoc.getCurrentVersionNumber() + ".\nΓράψτε το κείμενο για τη ΝΕΑ έκδοση:");
+                dialog.setHeaderText("Γράψτε το κείμενο για τη ΝΕΑ έκδοση (τρέχουσα v" + selectedDoc.getCurrentVersionNumber() + "):");
 
-                ButtonType saveButtonType = new ButtonType("Αποθήκευση", javafx.scene.control.ButtonBar.ButtonData.OK_DONE);
+                ButtonType saveButtonType = new ButtonType("Αποθήκευση", ButtonBar.ButtonData.OK_DONE);
                 dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
                 TextArea textArea = new TextArea();
                 textArea.setWrapText(true);
                 textArea.setPrefHeight(300);
                 textArea.setPrefWidth(400);
-                
-                java.util.List<String> versions = selectedDoc.getVersions();
+
+                List<String> versions = selectedDoc.getVersions();
                 if (versions != null && !versions.isEmpty()) {
                     textArea.setText(versions.get(versions.size() - 1));
                 }
 
                 dialog.getDialogPane().setContent(textArea);
-
-                dialog.setResultConverter(dialogButton -> {
-                    if (dialogButton == saveButtonType) return textArea.getText();
-                    return null;
-                });
+                dialog.setResultConverter(dialogButton -> dialogButton == saveButtonType ? textArea.getText() : null);
 
                 dialog.showAndWait().ifPresent(newContent -> {
                     if (newContent.trim().isEmpty()) {
                         new Alert(Alert.AlertType.ERROR, "Το κείμενο δεν μπορεί να είναι κενό!").showAndWait();
                         return;
                     }
-                    selectedDoc.getVersions().add(newContent);
-                    selectedDoc.setCurrentVersionNumber(selectedDoc.getCurrentVersionNumber() + 1);
+                    documentService.addVersion(selectedDoc, newContent);
                     table.refresh();
+                    refreshWatchList.run();
                     new Alert(Alert.AlertType.INFORMATION, "Επιτυχία! Δημιουργήθηκε η έκδοση v" + selectedDoc.getCurrentVersionNumber()).showAndWait();
                 });
-            }); 
+            });
 
-            
             Button newDocBtn = new Button("Νέο Έργο");
             buttonBox.getChildren().add(newDocBtn);
-            
+
             newDocBtn.setOnAction(e -> {
                 Dialog<ButtonType> dialog = new Dialog<>();
                 dialog.setTitle("Νέο Έργο");
-                dialog.setHeaderText("Δημιουργία Νέου Έργου\nΣυμπληρώστε τα υποχρεωτικά πεδία:");
+                dialog.setHeaderText("Δημιουργία Νέου Έργου");
                 dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-                javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
-                grid.setHgap(10); grid.setVgap(10);
-                grid.setPadding(new javafx.geometry.Insets(20, 50, 10, 10));
+                GridPane grid = new GridPane();
+                grid.setHgap(10);
+                grid.setVgap(10);
+                grid.setPadding(new Insets(20, 50, 10, 10));
 
                 TextField titleField = new TextField();
-                titleField.setPromptText("Τίτλος");
-
-                
                 TextField authorField = new TextField(loggedInUser.getFirstName() + " " + loggedInUser.getLastName());
 
                 ComboBox<String> categoryBox = new ComboBox<>();
-                
-                if (loggedInUser.getRole().equals("Admin")) {
+                if ("Admin".equals(loggedInUser.getRole())) {
                     for (classes.Category c : dataManager.getCategories()) categoryBox.getItems().add(c.getName());
                 } else {
                     categoryBox.getItems().addAll(loggedInUser.getAuthorizedCategories());
                 }
                 if (!categoryBox.getItems().isEmpty()) categoryBox.getSelectionModel().selectFirst();
 
-                DatePicker datePicker = new DatePicker(java.time.LocalDate.now());
-
-                
+                DatePicker datePicker = new DatePicker(LocalDate.now());
                 TextArea initialTextArea = new TextArea();
                 initialTextArea.setPromptText("Γράψτε το αρχικό κείμενο του έργου εδώ...");
                 initialTextArea.setPrefRowCount(6);
                 initialTextArea.setWrapText(true);
 
-                grid.add(new Label("Τίτλος Έργου:"), 0, 0); grid.add(titleField, 1, 0);
-                grid.add(new Label("Συγγραφέας:"), 0, 1); grid.add(authorField, 1, 1);
-                grid.add(new Label("Κατηγορία:"), 0, 2); grid.add(categoryBox, 1, 2);
-                grid.add(new Label("Ημερομηνία:"), 0, 3); grid.add(datePicker, 1, 3);
-                grid.add(new Label("Κείμενο:"), 0, 4); grid.add(initialTextArea, 1, 4);
+                grid.add(new Label("Τίτλος Έργου:"), 0, 0);
+                grid.add(titleField, 1, 0);
+                grid.add(new Label("Συγγραφέας:"), 0, 1);
+                grid.add(authorField, 1, 1);
+                grid.add(new Label("Κατηγορία:"), 0, 2);
+                grid.add(categoryBox, 1, 2);
+                grid.add(new Label("Ημερομηνία:"), 0, 3);
+                grid.add(datePicker, 1, 3);
+                grid.add(new Label("Κείμενο:"), 0, 4);
+                grid.add(initialTextArea, 1, 4);
 
                 dialog.getDialogPane().setContent(grid);
 
@@ -349,27 +314,25 @@ public class App extends javafx.application.Application {
                             new Alert(Alert.AlertType.ERROR, "Ο Τίτλος, η Κατηγορία και το Κείμενο είναι υποχρεωτικά!").showAndWait();
                             return;
                         }
-                        
-                        Document doc = new Document();
-                        doc.setTitle(titleField.getText());
-                        doc.setAuthorName(authorField.getText());
-                        doc.setCategory(categoryBox.getValue());
-                        doc.setCurrentVersionNumber(1);
-                        doc.setCreationDate(datePicker.getValue() != null ? datePicker.getValue().toString() : java.time.LocalDate.now().toString());
-                        doc.setVersions(new java.util.ArrayList<>());
-                        doc.getVersions().add(initialTextArea.getText()); 
-                        
+
+                        Document doc = documentService.createDocument(
+                                titleField.getText(),
+                                authorField.getText(),
+                                categoryBox.getValue(),
+                                datePicker.getValue(),
+                                initialTextArea.getText()
+                        );
+
                         dataManager.getDocuments().add(doc);
-                        masterData.add(doc); 
-                        totalDocsLabel.setText("• Συνολικά Έγγραφα Συστήματος: " + dataManager.getDocuments().size());
+                        refreshDocumentTable.run();
+                        refreshStats.run();
                     }
                 });
-            }); 
-            
-           
+            });
+
             Button deleteDocBtn = new Button("Διαγραφή");
             buttonBox.getChildren().add(deleteDocBtn);
-            
+
             deleteDocBtn.setOnAction(e -> {
                 Document selectedDoc = table.getSelectionModel().getSelectedItem();
                 if (selectedDoc == null) {
@@ -380,58 +343,123 @@ public class App extends javafx.application.Application {
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Σίγουρα θέλετε να διαγράψετε το έργο '" + selectedDoc.getTitle() + "';\n(Η διαγραφή είναι οριστική)");
                 confirm.showAndWait().ifPresent(response -> {
                     if (response == ButtonType.OK) {
-                        
-                        dataManager.getDocuments().remove(selectedDoc);
-                        masterData.remove(selectedDoc);
-                        
-                        
-                        for (classes.User u : dataManager.getUsers()) {
-                            if (u.getFollowedDocuments() != null) {
-                                u.getFollowedDocuments().remove(selectedDoc.getTitle());
-                            }
-                        }
-                        
-                      
-                        totalDocsLabel.setText("• Συνολικά Έγγραφα Συστήματος: " + dataManager.getDocuments().size());
-                        followedDocsLabel.setText("• Έγγραφα που παρακολουθείτε: " + loggedInUser.getFollowedDocuments().size());
+                        documentService.deleteDocumentAndCleanupFollows(selectedDoc, dataManager.getDocuments(), dataManager.getUsers());
+                        refreshDocumentTable.run();
+                        refreshStats.run();
+                        refreshWatchList.run();
                         new Alert(Alert.AlertType.INFORMATION, "Το έργο διαγράφηκε επιτυχώς!").showAndWait();
                     }
                 });
             });
-            
-        } 
+        }
 
-        
-        
-        if (loggedInUser.getRole().equals("Admin")) {
+        if ("Admin".equals(loggedInUser.getRole())) {
             Button adminBtn = new Button("Διαχείριση Συστήματος (Admin)");
             buttonBox.getChildren().add(adminBtn);
-            
             adminBtn.setOnAction(e -> openAdminPanel());
         }
-        
-        mainContentBox.getChildren().add(buttonBox);
 
-        javafx.scene.layout.BorderPane root = new javafx.scene.layout.BorderPane();
-        root.setTop(statsBox);       
-        root.setCenter(mainContentBox); 
+        VBox documentsTabContent = new VBox(10,
+                new Label("Αναζήτηση Εγγράφων:"),
+                searchField,
+                table,
+                buttonBox
+        );
 
-        Scene scene = new Scene(root, 800, 600);
+        Button removeFollowBtn = new Button("Κατάργηση επιλεγμένης παρακολούθησης");
+        removeFollowBtn.setOnAction(e -> {
+            String selected = watchListView.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                new Alert(Alert.AlertType.WARNING, "Επιλέξτε μία παρακολούθηση από τη λίστα.").showAndWait();
+                return;
+            }
+            String docTitle = selected.replaceAll("\\s*\\(τρέχουσα v.*$", "");
+            loggedInUser.unfollowDocument(docTitle);
+            refreshWatchList.run();
+            refreshStats.run();
+        });
+
+        VBox watchTabContent = new VBox(10,
+                new Label("Ενεργές παρακολουθήσεις:"),
+                watchListView,
+                removeFollowBtn
+        );
+        watchTabContent.setPadding(new Insets(5, 0, 0, 0));
+
+        TabPane userTabs = new TabPane();
+        Tab docsTab = new Tab("Έγγραφα", documentsTabContent);
+        docsTab.setClosable(false);
+        Tab watchTab = new Tab("Παρακολουθήσεις", watchTabContent);
+        watchTab.setClosable(false);
+        userTabs.getTabs().addAll(docsTab, watchTab);
+
+        mainContentBox.getChildren().addAll(welcomeLabel, userTabs);
+
+        BorderPane root = new BorderPane();
+        root.setTop(statsBox);
+        root.setCenter(mainContentBox);
+
+        Scene scene = new Scene(root, 900, 650);
         stage.setScene(scene);
-    } 
+    }
 
-    
+    private void showDocumentReadDialog(Document selectedDoc) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Ανάγνωση: " + selectedDoc.getTitle());
+        dialog.setHeaderText("Συγγραφέας: " + selectedDoc.getAuthorName() + " | Κατηγορία: " + selectedDoc.getCategory() +
+                "\nΗμερομηνία Δημιουργίας: " + selectedDoc.getCreationDate() + " | Τρέχουσα Έκδοση: v" + selectedDoc.getCurrentVersionNumber());
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+        VBox contentBox = new VBox(10);
+        contentBox.setPadding(new Insets(10));
+
+        TextArea contentArea = new TextArea();
+        contentArea.setEditable(false);
+        contentArea.setWrapText(true);
+        contentArea.setPrefWidth(520);
+        contentArea.setPrefHeight(340);
+
+        List<Integer> visibleVersions = documentService.getVisibleVersionNumbersForUser(selectedDoc, loggedInUser);
+
+        if (visibleVersions.isEmpty()) {
+            contentArea.setText("Δεν υπάρχει κείμενο για αυτό το έργο.");
+        } else if ("Simple User".equals(loggedInUser.getRole())) {
+            int latest = visibleVersions.get(0);
+            contentArea.setText(documentService.getContentByVersion(selectedDoc, latest));
+            contentBox.getChildren().add(new Label("Διαθέσιμη έκδοση: v" + latest));
+        } else {
+            ComboBox<Integer> versionBox = new ComboBox<>();
+            versionBox.getItems().addAll(visibleVersions);
+            versionBox.getSelectionModel().selectFirst();
+
+            Runnable refreshVersionContent = () -> {
+                Integer selectedVersion = versionBox.getValue();
+                if (selectedVersion == null) return;
+                contentArea.setText(documentService.getContentByVersion(selectedDoc, selectedVersion));
+            };
+            refreshVersionContent.run();
+            versionBox.setOnAction(ev -> refreshVersionContent.run());
+
+            HBox selector = new HBox(8, new Label("Επιλέξτε έκδοση:"), versionBox);
+            selector.setAlignment(Pos.CENTER_LEFT);
+            contentBox.getChildren().add(selector);
+        }
+
+        contentBox.getChildren().add(contentArea);
+        dialog.getDialogPane().setContent(contentBox);
+        dialog.showAndWait();
+    }
+
     private void openAdminPanel() {
         Stage adminStage = new Stage();
         adminStage.setTitle("Πάνελ Διαχειριστή - MediaLab");
 
         TabPane tabPane = new TabPane();
 
-        
         Tab usersTab = new Tab("Χρήστες");
         usersTab.setClosable(false);
         VBox usersBox = new VBox(10);
-        usersBox.setPadding(new javafx.geometry.Insets(15));
+        usersBox.setPadding(new Insets(15));
 
         ListView<String> usersList = new ListView<>();
         Runnable refreshUsers = () -> {
@@ -442,21 +470,19 @@ public class App extends javafx.application.Application {
         };
         refreshUsers.run();
 
-       
-        javafx.scene.layout.HBox userBtns = new javafx.scene.layout.HBox(10);
+        HBox userBtns = new HBox(10);
         Button addUserBtn = new Button("Προσθήκη");
         Button editUserBtn = new Button("Επεξεργασία");
         Button delUserBtn = new Button("Διαγραφή");
         userBtns.getChildren().addAll(addUserBtn, editUserBtn, delUserBtn);
 
-        
         editUserBtn.setOnAction(e -> {
             int idx = usersList.getSelectionModel().getSelectedIndex();
             if (idx < 0) {
                 new Alert(Alert.AlertType.WARNING, "Επιλέξτε έναν χρήστη από τη λίστα πρώτα!").showAndWait();
                 return;
             }
-            
+
             User u = dataManager.getUsers().get(idx);
             if (u.getUsername().equals("medialab")) {
                 new Alert(Alert.AlertType.ERROR, "Δεν μπορείτε να επεξεργαστείτε τον κεντρικό διαχειριστή!").showAndWait();
@@ -468,37 +494,42 @@ public class App extends javafx.application.Application {
             dialog.setHeaderText("Τροποποίηση στοιχείων και δικαιωμάτων: " + u.getUsername());
             dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-            javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
-            grid.setHgap(10); grid.setVgap(10);
+            GridPane grid = new GridPane();
+            grid.setHgap(10);
+            grid.setVgap(10);
 
             TextField fnField = new TextField(u.getFirstName());
             TextField lnField = new TextField(u.getLastName());
             PasswordField pwField = new PasswordField();
             pwField.setText(u.getPassword());
-            
+
             ComboBox<String> roleBox = new ComboBox<>();
             roleBox.getItems().addAll("Simple User", "Author", "Admin");
             roleBox.setValue(u.getRole());
 
-            
             ListView<String> catSelection = new ListView<>();
             catSelection.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             for (classes.Category c : dataManager.getCategories()) {
                 catSelection.getItems().add(c.getName());
             }
             catSelection.setPrefHeight(100);
-            
+
             if (u.getAuthorizedCategories() != null) {
                 for (String cat : u.getAuthorizedCategories()) {
                     catSelection.getSelectionModel().select(cat);
                 }
             }
 
-            grid.add(new Label("Όνομα:"), 0, 0); grid.add(fnField, 1, 0);
-            grid.add(new Label("Επώνυμο:"), 0, 1); grid.add(lnField, 1, 1);
-            grid.add(new Label("Password:"), 0, 2); grid.add(pwField, 1, 2);
-            grid.add(new Label("Ρόλος:"), 0, 3); grid.add(roleBox, 1, 3);
-            grid.add(new Label("Κατηγορίες\n(Ctrl+Click):"), 0, 4); grid.add(catSelection, 1, 4);
+            grid.add(new Label("Όνομα:"), 0, 0);
+            grid.add(fnField, 1, 0);
+            grid.add(new Label("Επώνυμο:"), 0, 1);
+            grid.add(lnField, 1, 1);
+            grid.add(new Label("Password:"), 0, 2);
+            grid.add(pwField, 1, 2);
+            grid.add(new Label("Ρόλος:"), 0, 3);
+            grid.add(roleBox, 1, 3);
+            grid.add(new Label("Κατηγορίες\n(Ctrl+Click):"), 0, 4);
+            grid.add(catSelection, 1, 4);
 
             dialog.getDialogPane().setContent(grid);
 
@@ -508,16 +539,16 @@ public class App extends javafx.application.Application {
                         new Alert(Alert.AlertType.ERROR, "Συμπληρώστε όλα τα πεδία!").showAndWait();
                         return null;
                     }
-                    if (catSelection.getSelectionModel().getSelectedItems().isEmpty() && !roleBox.getValue().equals("Admin")) {
+                    if (catSelection.getSelectionModel().getSelectedItems().isEmpty() && !"Admin".equals(roleBox.getValue())) {
                         new Alert(Alert.AlertType.ERROR, "Πρέπει να αναθέσετε τουλάχιστον 1 κατηγορία!").showAndWait();
                         return null;
                     }
-                    // Ενημέρωση του χρήστη με τα νέα στοιχεία
+
                     u.setPassword(pwField.getText());
                     u.setFirstName(fnField.getText());
                     u.setLastName(lnField.getText());
                     u.setRole(roleBox.getValue());
-                    u.setAuthorizedCategories(new java.util.ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
+                    u.setAuthorizedCategories(new ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
                     return u;
                 }
                 return null;
@@ -535,19 +566,19 @@ public class App extends javafx.application.Application {
             dialog.setHeaderText("Εισάγετε τα στοιχεία του νέου χρήστη:");
             dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-            javafx.scene.layout.GridPane grid = new javafx.scene.layout.GridPane();
-            grid.setHgap(10); grid.setVgap(10);
+            GridPane grid = new GridPane();
+            grid.setHgap(10);
+            grid.setVgap(10);
 
             TextField unField = new TextField();
             PasswordField pwField = new PasswordField();
             TextField fnField = new TextField();
             TextField lnField = new TextField();
-            
+
             ComboBox<String> roleBox = new ComboBox<>();
             roleBox.getItems().addAll("Simple User", "Author", "Admin");
             roleBox.getSelectionModel().selectFirst();
 
-            
             ListView<String> catSelection = new ListView<>();
             catSelection.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             for (classes.Category c : dataManager.getCategories()) {
@@ -555,12 +586,18 @@ public class App extends javafx.application.Application {
             }
             catSelection.setPrefHeight(100);
 
-            grid.add(new Label("Όνομα:"), 0, 0); grid.add(fnField, 1, 0);
-            grid.add(new Label("Επώνυμο:"), 0, 1); grid.add(lnField, 1, 1);
-            grid.add(new Label("Username:"), 0, 2); grid.add(unField, 1, 2);
-            grid.add(new Label("Password:"), 0, 3); grid.add(pwField, 1, 3);
-            grid.add(new Label("Ρόλος:"), 0, 4); grid.add(roleBox, 1, 4);
-            grid.add(new Label("Κατηγορίες\n(Ctrl+Click):"), 0, 5); grid.add(catSelection, 1, 5);
+            grid.add(new Label("Όνομα:"), 0, 0);
+            grid.add(fnField, 1, 0);
+            grid.add(new Label("Επώνυμο:"), 0, 1);
+            grid.add(lnField, 1, 1);
+            grid.add(new Label("Username:"), 0, 2);
+            grid.add(unField, 1, 2);
+            grid.add(new Label("Password:"), 0, 3);
+            grid.add(pwField, 1, 3);
+            grid.add(new Label("Ρόλος:"), 0, 4);
+            grid.add(roleBox, 1, 4);
+            grid.add(new Label("Κατηγορίες\n(Ctrl+Click):"), 0, 5);
+            grid.add(catSelection, 1, 5);
 
             dialog.getDialogPane().setContent(grid);
 
@@ -570,7 +607,7 @@ public class App extends javafx.application.Application {
                         new Alert(Alert.AlertType.ERROR, "Συμπληρώστε όλα τα πεδία!").showAndWait();
                         return null;
                     }
-                    if (catSelection.getSelectionModel().getSelectedItems().isEmpty() && !roleBox.getValue().equals("Admin")) {
+                    if (catSelection.getSelectionModel().getSelectedItems().isEmpty() && !"Admin".equals(roleBox.getValue())) {
                         new Alert(Alert.AlertType.ERROR, "Πρέπει να αναθέσετε τουλάχιστον 1 κατηγορία!").showAndWait();
                         return null;
                     }
@@ -580,8 +617,8 @@ public class App extends javafx.application.Application {
                     u.setFirstName(fnField.getText());
                     u.setLastName(lnField.getText());
                     u.setRole(roleBox.getValue());
-                    u.setAuthorizedCategories(new java.util.ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
-                    u.setFollowedDocuments(new java.util.ArrayList<>());
+                    u.setAuthorizedCategories(new ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
+                    u.setFollowedDocuments(new ArrayList<>());
                     return u;
                 }
                 return null;
@@ -610,11 +647,10 @@ public class App extends javafx.application.Application {
         usersBox.getChildren().addAll(new Label("Λίστα Χρηστών Συστήματος:"), usersList, userBtns);
         usersTab.setContent(usersBox);
 
-        
         Tab catTab = new Tab("Κατηγορίες");
         catTab.setClosable(false);
         VBox catBox = new VBox(10);
-        catBox.setPadding(new javafx.geometry.Insets(15));
+        catBox.setPadding(new Insets(15));
 
         ListView<String> catList = new ListView<>();
         Runnable refreshCats = () -> {
@@ -625,7 +661,7 @@ public class App extends javafx.application.Application {
         };
         refreshCats.run();
 
-        javafx.scene.layout.HBox catBtns = new javafx.scene.layout.HBox(10);
+        HBox catBtns = new HBox(10);
         Button addCatBtn = new Button("Νέα");
         Button editCatBtn = new Button("Μετονομασία");
         Button delCatBtn = new Button("Διαγραφή");
@@ -656,12 +692,11 @@ public class App extends javafx.application.Application {
                     if (!newName.trim().isEmpty()) {
                         String oldName = oldCat.getName();
                         oldCat.setName(newName);
-                        
-                        
+
                         for (Document doc : dataManager.getDocuments()) {
                             if (doc.getCategory().equals(oldName)) doc.setCategory(newName);
                         }
-                        
+
                         for (User u : dataManager.getUsers()) {
                             if (u.getAuthorizedCategories() != null && u.getAuthorizedCategories().contains(oldName)) {
                                 u.getAuthorizedCategories().remove(oldName);
@@ -679,29 +714,28 @@ public class App extends javafx.application.Application {
             if (idx >= 0) {
                 classes.Category c = dataManager.getCategories().get(idx);
                 String catName = c.getName();
-                
+
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Διαγραφή της κατηγορίας '" + catName + "';\nΠΡΟΣΟΧΗ: Θα διαγραφούν ΟΛΑ τα έγγραφά της!");
                 confirm.showAndWait().ifPresent(res -> {
                     if (res == ButtonType.OK) {
                         dataManager.getCategories().remove(c);
-                        
-                        java.util.List<Document> toDelete = new java.util.ArrayList<>();
+
+                        List<Document> toDelete = new ArrayList<>();
                         for (Document doc : dataManager.getDocuments()) {
                             if (doc.getCategory().equals(catName)) toDelete.add(doc);
                         }
                         dataManager.getDocuments().removeAll(toDelete);
-                        
-                        
+
                         for (Document delDoc : toDelete) {
                             for (User u : dataManager.getUsers()) {
-                                if (u.getFollowedDocuments() != null) u.getFollowedDocuments().remove(delDoc.getTitle());
+                                u.unfollowDocument(delDoc.getTitle());
                             }
                         }
-                       
+
                         for (User u : dataManager.getUsers()) {
                             if (u.getAuthorizedCategories() != null) u.getAuthorizedCategories().remove(catName);
                         }
-                        
+
                         refreshCats.run();
                         new Alert(Alert.AlertType.INFORMATION, "Η κατηγορία και τα έγγραφά της διαγράφηκαν!").showAndWait();
                     }
@@ -721,10 +755,10 @@ public class App extends javafx.application.Application {
 
     @Override
     public void stop() {
-        dataManager.saveData(); 
+        dataManager.saveData();
     }
 
     public static void main(String[] args) {
         launch(args);
     }
-} 
+}

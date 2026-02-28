@@ -55,7 +55,7 @@ git commit -m "Remove local JavaFX SDKs and ignore them"
 git push origin main
 ```
 
-If those files were already committed historically, use a history-rewrite tool like `git filter-repo` or `bfg` to purge them from history before pushing. I can help run that if you want.
+If those files were already committed historically, use a history-rewrite tool like `git filter-repo` or `bfg` to purge them from history before pushing.
 
 Alternative: Use Git LFS for large binaries (requires enabling LFS for the repo):
 
@@ -67,8 +67,5 @@ git add .gitattributes
 # recommit large files as LFS
 ```
 
-**Files I modified while working**
-- [pom.xml](pom.xml): added JUnit test dependencies and `maven-surefire-plugin` to run tests.
-- Added tests under `src/test/java/` for `Category`, `User`, `Document`, and `DataManager`.
-
-If you want, I can now remove the local SDK files from the repository history or convert them to Git LFS—which would you prefer?
+**Project note**
+- The application currently focuses on JavaFX GUI + JSON persistence and does not include automated tests yet.
