@@ -161,14 +161,9 @@ public class App extends javafx.application.Application {
         javafx.collections.ObservableList<Document> masterData = javafx.collections.FXCollections.observableArrayList();
         
         for (Document doc : dataManager.getDocuments()) {
-            if (loggedInUser.getRole().equals("Admin")) {
-                
+            
+            if (loggedInUser.hasAccessToCategory(doc.getCategory())) {
                 masterData.add(doc);
-            } else {
-                
-                if (loggedInUser.getAuthorizedCategories() != null && loggedInUser.getAuthorizedCategories().contains(doc.getCategory())) {
-                    masterData.add(doc);
-                }
             }
         }
         
@@ -220,7 +215,7 @@ public class App extends javafx.application.Application {
                 contentToDisplay.append("Δεν υπάρχει κείμενο για αυτό το έργο.");
             } else {
                
-                if (loggedInUser.getRole().equals("Simple User")) {
+                if (!(loggedInUser instanceof classes.Author)) {
                     contentToDisplay.append("--- Τρέχουσα Έκδοση (v").append(selectedDoc.getCurrentVersionNumber()).append(") ---\n");
                     contentToDisplay.append(allVersions.get(allVersions.size() - 1));
                 } else {
@@ -268,7 +263,7 @@ public class App extends javafx.application.Application {
             followedDocsLabel.setText("• Έγγραφα που παρακολουθείτε: " + userFollows.size());
         });
 
-        if (loggedInUser.getRole().equals("Admin") || loggedInUser.getRole().equals("Author")) {
+        if (loggedInUser instanceof classes.Author) {
             
             Button editBtn = new Button("Επεξεργασία (Νέα Έκδοση)");
             buttonBox.getChildren().add(editBtn);
@@ -338,7 +333,7 @@ public class App extends javafx.application.Application {
 
                 ComboBox<String> categoryBox = new ComboBox<>();
                 
-                if (loggedInUser.getRole().equals("Admin")) {
+                if (loggedInUser instanceof classes.Admin) {
                     for (classes.Category c : dataManager.getCategories()) categoryBox.getItems().add(c.getName());
                 } else {
                     categoryBox.getItems().addAll(loggedInUser.getAuthorizedCategories());
@@ -422,7 +417,7 @@ public class App extends javafx.application.Application {
 
         
         
-        if (loggedInUser.getRole().equals("Admin")) {
+        if (loggedInUser instanceof classes.Admin) {
             Button adminBtn = new Button("Διαχείριση Συστήματος (Admin)");
             buttonBox.getChildren().add(adminBtn);
             
@@ -531,13 +526,30 @@ public class App extends javafx.application.Application {
                         new Alert(Alert.AlertType.ERROR, "Πρέπει να αναθέσετε τουλάχιστον 1 κατηγορία!").showAndWait();
                         return null;
                     }
-                    // Ενημέρωση του χρήστη με τα νέα στοιχεία
-                    u.setPassword(pwField.getText());
-                    u.setFirstName(fnField.getText());
-                    u.setLastName(lnField.getText());
-                    u.setRole(roleBox.getValue());
-                    u.setAuthorizedCategories(new java.util.ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
-                    return u;
+                    
+                    String newRole = roleBox.getValue();
+                    User updatedUser;
+                    
+                    if (newRole.equals("Admin")) {
+                        updatedUser = new classes.Admin();
+                    } else if (newRole.equals("Author")) {
+                        updatedUser = new classes.Author();
+                    } else {
+                        updatedUser = new classes.SimpleUser();
+                    }
+
+                    updatedUser.setUsername(u.getUsername()); 
+                    updatedUser.setPassword(pwField.getText());
+                    updatedUser.setFirstName(fnField.getText());
+                    updatedUser.setLastName(lnField.getText());
+                    updatedUser.setAuthorizedCategories(new java.util.ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
+                    updatedUser.setFollowedDocuments(u.getFollowedDocuments()); 
+                    updatedUser.setLastSeenDocumentVersions(u.getLastSeenDocumentVersions()); 
+
+                    int index = dataManager.getUsers().indexOf(u);
+                    dataManager.getUsers().set(index, updatedUser);
+
+                    return updatedUser;
                 }
                 return null;
             });
@@ -593,12 +605,22 @@ public class App extends javafx.application.Application {
                         new Alert(Alert.AlertType.ERROR, "Πρέπει να αναθέσετε τουλάχιστον 1 κατηγορία!").showAndWait();
                         return null;
                     }
-                    User u = new User();
+                    
+                    String selectedRole = roleBox.getValue();
+                    User u;
+                    
+                    if (selectedRole.equals("Admin")) {
+                        u = new classes.Admin();
+                    } else if (selectedRole.equals("Author")) {
+                        u = new classes.Author();
+                    } else {
+                        u = new classes.SimpleUser();
+                    }
+                    
                     u.setUsername(unField.getText());
                     u.setPassword(pwField.getText());
                     u.setFirstName(fnField.getText());
                     u.setLastName(lnField.getText());
-                    u.setRole(roleBox.getValue());
                     u.setAuthorizedCategories(new java.util.ArrayList<>(catSelection.getSelectionModel().getSelectedItems()));
                     u.setFollowedDocuments(new java.util.ArrayList<>());
                     return u;

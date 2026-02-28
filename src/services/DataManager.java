@@ -65,7 +65,8 @@ public class DataManager {
     private void checkAndCreateDefaultAdmin() {
         boolean exists = users.stream().anyMatch(u -> u.getUsername().equals("medialab"));
         if (!exists) {
-            users.add(new User("Media", "Lab", "medialab", "medialab_2025", "Admin"));
+            
+            users.add(new classes.Admin("Media", "Lab", "medialab", "medialab_2025"));
         }
     }
 

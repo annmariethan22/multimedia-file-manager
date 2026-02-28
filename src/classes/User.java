@@ -1,25 +1,38 @@
 package classes;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class User {
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "role", visible = true)
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = SimpleUser.class, name = "Simple User"),
+    @JsonSubTypes.Type(value = Author.class, name = "Author"),
+    @JsonSubTypes.Type(value = Admin.class, name = "Admin")
+})
+public abstract class User {
     private String firstName;
     private String lastName;
     private String username;
     private String password;
-    private String role; // "Admin", "Author", "Simple User"
+    private String role; 
     
-    //βλεπει ο χρηστης
     private List<String> authorizedCategories;
-    
-    
     private List<String> followedDocuments;
     private Map<String, Integer> lastSeenDocumentVersions;
 
     
+    public User() {
+        this.authorizedCategories = new ArrayList<>();
+        this.followedDocuments = new ArrayList<>();
+        this.lastSeenDocumentVersions = new HashMap<>();
+    }
+
     public User(String firstName, String lastName, String username, String password, String role) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -31,18 +44,21 @@ public class User {
         this.lastSeenDocumentVersions = new HashMap<>();
     }
 
-    
     public void addAuthorizedCategory(String categoryName) {
         if (!this.authorizedCategories.contains(categoryName)) {
             this.authorizedCategories.add(categoryName);
         }
     }
 
-    
     public void followDocument(String documentTitle) {
         if (!this.followedDocuments.contains(documentTitle)) {
             this.followedDocuments.add(documentTitle);
         }
+    }
+
+    // Βασικός έλεγχος πρόσβασης (Τον κάνουμε overridable)
+    public boolean hasAccessToCategory(String categoryName) {
+        return authorizedCategories.contains(categoryName);
     }
 
     
@@ -53,6 +69,7 @@ public class User {
     public String getLastName() { return lastName; }
     public List<String> getAuthorizedCategories() { return authorizedCategories; }
     public List<String> getFollowedDocuments() { return followedDocuments; }
+    
     public Map<String, Integer> getLastSeenDocumentVersions() {
         if (lastSeenDocumentVersions == null) {
             lastSeenDocumentVersions = new HashMap<>();
@@ -73,14 +90,6 @@ public class User {
         getLastSeenDocumentVersions().remove(documentTitle);
     }
 
-
-    // ελεγχος δικαιωματος σε κατηγορια
-    public boolean hasAccessToCategory(String categoryName) {
-        if (this.role.equals("Admin")) return true;
-        return authorizedCategories.contains(categoryName);
-    }
-
-    
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
     public void setUsername(String username) { this.username = username; }
@@ -91,7 +100,4 @@ public class User {
     public void setLastSeenDocumentVersions(Map<String, Integer> lastSeenDocumentVersions) {
         this.lastSeenDocumentVersions = (lastSeenDocumentVersions == null) ? new HashMap<>() : lastSeenDocumentVersions;
     }
-
-    public User() {} 
-
 }

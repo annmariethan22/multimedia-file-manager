@@ -1,0 +1,13 @@
+services/DataManager.class
+gui/App.class
+classes/Category.class
+services/DataManager$1.class
+gui/LoginController.class
+classes/Author.class
+classes/Document.class
+Main.class
+classes/SimpleUser.class
+classes/User.class
+services/DataManager$3.class
+services/DataManager$2.class
+classes/Admin.class
