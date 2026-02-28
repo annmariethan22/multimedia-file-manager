@@ -1,0 +1,19 @@
+# Maven / build
+/target/
+*.class
+
+# Local JavaFX SDKs and archives
+openjfx-*-linux-*_bin-sdk.zip
+javafx-sdk-*/
+openjfx-*/
+
+# Native libs (local SDKs)
+**/lib/libjfxwebkit.so
+*.so
+
+# IDE
+/.idea/
+/.vscode/
+
+# OS
+.DS_Store
