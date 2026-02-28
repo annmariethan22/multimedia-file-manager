@@ -13,7 +13,7 @@ public class User {
     //βλεπει ο χρηστης
     private List<String> authorizedCategories;
     
-    // για notifications σε αυτα που ακολουθει
+    
     private List<String> followedDocuments;
 
     
@@ -55,5 +55,14 @@ public class User {
         if (this.role.equals("Admin")) return true;
         return authorizedCategories.contains(categoryName);
     }
+
+    
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setUsername(String username) { this.username = username; }
+    public void setPassword(String password) { this.password = password; }
+    public void setRole(String role) { this.role = role; }
+    public void setAuthorizedCategories(List<String> authorizedCategories) { this.authorizedCategories = authorizedCategories; }
+    public void setFollowedDocuments(List<String> followedDocuments) { this.followedDocuments = followedDocuments; }
     public User() {} 
 }

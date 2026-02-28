@@ -5,7 +5,7 @@
   "password" : "medialab_2025",
   "role" : "Admin",
   "authorizedCategories" : [ ],
-  "followedDocuments" : [ ]
+  "followedDocuments" : [ "4.48 Ψύχωση (4.48 Psychosis)", "Φαίδρας Έρως (Phaedra's Love)" ]
 }, {
   "firstName" : "Ελπίς",
   "lastName" : "Συγγραφέας",
@@ -13,7 +13,7 @@
   "password" : "123",
   "role" : "Author",
   "authorizedCategories" : [ "Αρχαία Τραγωδία", "Κωμωδία" ],
-  "followedDocuments" : [ ]
+  "followedDocuments" : [ "Ερείπια (Blasted)" ]
 }, {
   "firstName" : "Μελπωμένη",
   "lastName" : "Αναγνώστης",
@@ -22,4 +22,28 @@
   "role" : "Simple User",
   "authorizedCategories" : [ "Αρχαία Τραγωδία" ],
   "followedDocuments" : [ "Αντιγόνη" ]
+}, {
+  "firstName" : "Madonna",
+  "lastName" : "Συγγραφέας",
+  "username" : "author1m",
+  "password" : "madonna",
+  "role" : "Author",
+  "authorizedCategories" : [ "Αρχαία Τραγωδία", "Ιστορικό Δράμα" ],
+  "followedDocuments" : [ "Οιδίπους Τύραννος" ]
+}, {
+  "firstName" : "Magdalene",
+  "lastName" : "The User",
+  "username" : "user2",
+  "password" : "123",
+  "role" : "Simple User",
+  "authorizedCategories" : [ "Κωμωδία", "Σύγχρονο Θέατρο" ],
+  "followedDocuments" : [ "Λυσιστράτη" ]
+}, {
+  "firstName" : "Αλέκος",
+  "lastName" : "Αθανασιάδης",
+  "username" : "αλεκος_αλεκος",
+  "password" : "αα",
+  "role" : "Simple User",
+  "authorizedCategories" : [ "Κωμωδία", "Σύγχρονο Θέατρο" ],
+  "followedDocuments" : [ ]
 } ]

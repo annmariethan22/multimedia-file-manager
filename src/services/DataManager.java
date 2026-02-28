@@ -18,6 +18,7 @@ public class DataManager {
     
     public void loadData() {
         try {
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             File folder = new File(FOLDER_PATH);
             if (!folder.exists()) folder.mkdir(); 
 
