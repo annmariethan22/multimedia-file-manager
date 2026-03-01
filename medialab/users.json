@@ -8,51 +8,35 @@
   "followedDocuments" : [ "4.48 Ψύχωση (4.48 Psychosis)", "Φαίδρας Έρως (Phaedra's Love)" ],
   "lastSeenDocumentVersions" : {
     "4.48 Ψύχωση (4.48 Psychosis)" : 3,
-    "Φαίδρας Έρως (Phaedra's Love)" : 1
+    "Φαίδρας Έρως (Phaedra's Love)" : 2
   }
 }, {
-  "firstName" : "Ελπίς",
-  "lastName" : "Συγγραφέας",
-  "username" : "author1",
-  "password" : "123",
-  "role" : "Author",
-  "authorizedCategories" : [ "Αρχαία Τραγωδία", "Κωμωδία" ],
-  "followedDocuments" : [ "Ερείπια (Blasted)" ],
-  "lastSeenDocumentVersions" : { }
-}, {
-  "firstName" : "Μελπωμένη",
-  "lastName" : "Αναγνώστης",
-  "username" : "user1",
-  "password" : "123",
+  "firstName" : "Απλός ",
+  "lastName" : "Χρήστης",
+  "username" : "user 1",
+  "password" : "user123",
   "role" : "Simple User",
-  "authorizedCategories" : [ "Αρχαία Τραγωδία" ],
-  "followedDocuments" : [ "Αντιγόνη" ],
+  "authorizedCategories" : [ "Σύγχρονο Θέατρο" ],
+  "followedDocuments" : [ "Φαίδρας Έρως (Phaedra's Love)" ],
+  "lastSeenDocumentVersions" : {
+    "Φαίδρας Έρως (Phaedra's Love)" : 3
+  }
+}, {
+  "firstName" : "Συγγραφέας",
+  "lastName" : "Γνωστή",
+  "username" : "author 1",
+  "password" : "author123",
+  "role" : "Author",
+  "authorizedCategories" : [ "Σύγχρονο Θέατρο" ],
+  "followedDocuments" : [ ],
   "lastSeenDocumentVersions" : { }
 }, {
   "firstName" : "Madonna",
-  "lastName" : "Συγγραφέας",
-  "username" : "author1m",
-  "password" : "madonna",
+  "lastName" : "The",
+  "username" : "madonna",
+  "password" : "madonna123",
   "role" : "Author",
-  "authorizedCategories" : [ "Αρχαία Τραγωδία", "Ιστορικό Δράμα" ],
-  "followedDocuments" : [ "Οιδίπους Τύραννος" ],
-  "lastSeenDocumentVersions" : { }
-}, {
-  "firstName" : "Magdalene",
-  "lastName" : "The User",
-  "username" : "user2",
-  "password" : "123",
-  "role" : "Simple User",
-  "authorizedCategories" : [ "Κωμωδία", "Σύγχρονο Θέατρο" ],
-  "followedDocuments" : [ "Λυσιστράτη" ],
-  "lastSeenDocumentVersions" : { }
-}, {
-  "firstName" : "Αλέκος",
-  "lastName" : "Αθανασιάδης",
-  "username" : "αλεκος_αλεκος",
-  "password" : "αα",
-  "role" : "Simple User",
-  "authorizedCategories" : [ "Κωμωδία", "Σύγχρονο Θέατρο" ],
+  "authorizedCategories" : [ "Αρχαία Τραγωδία", "madonna's category" ],
   "followedDocuments" : [ ],
   "lastSeenDocumentVersions" : { }
 } ]

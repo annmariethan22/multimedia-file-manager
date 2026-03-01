@@ -4,6 +4,7 @@ public class Author extends SimpleUser {
 
     public Author() {
         super();
+        this.setRole("Author");
     }
 
     public Author(String firstName, String lastName, String username, String password) {

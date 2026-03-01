@@ -22,32 +22,43 @@ public class DataManager {
 
     
     public void loadData() {
-        try {
-            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            File folder = new File(FOLDER_PATH);
-            if (!folder.exists()) folder.mkdir(); 
+        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        File folder = new File(FOLDER_PATH);
+        if (!folder.exists()) folder.mkdir(); 
 
+        
+        try {
             File userFile = new File(FOLDER_PATH + "users.json");
-            if (userFile.exists()) {
+            // Διαβάζει μόνο αν το αρχείο υπάρχει ΚΑΙ δεν είναι εντελώς άδειο (0 bytes)
+            if (userFile.exists() && userFile.length() > 0) {
                 users = mapper.readValue(userFile, new TypeReference<List<User>>(){});
             }
-            
+        } catch (Exception e) { 
+            System.err.println("Σφάλμα κατά τη φόρτωση των Users: " + e.getMessage()); 
+        }
+        
+        
+        try {
             File catFile = new File(FOLDER_PATH + "categories.json");
-            if (catFile.exists()) {
+            if (catFile.exists() && catFile.length() > 0) {
                 categories = mapper.readValue(catFile, new TypeReference<List<Category>>(){});
             }
+        } catch (Exception e) { 
+            System.err.println("Σφάλμα κατά τη φόρτωση των Categories: " + e.getMessage()); 
+        }
 
+        
+        try {
             File docFile = new File(FOLDER_PATH + "documents.json");
-            if (docFile.exists()) {
+            if (docFile.exists() && docFile.length() > 0) {
                 documents = mapper.readValue(docFile, new TypeReference<List<Document>>(){});
             }
-            
-            // υπαρχει admin medialab
-            checkAndCreateDefaultAdmin();
-            
-        } catch (IOException e) {
-            System.err.println("Σφάλμα κατά τη φόρτωση: " + e.getMessage());
+        } catch (Exception e) { 
+            System.err.println("Σφάλμα κατά τη φόρτωση των Documents: " + e.getMessage()); 
         }
+        
+        
+        checkAndCreateDefaultAdmin();
     }
 
     

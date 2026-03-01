@@ -45,34 +45,36 @@ public class App extends javafx.application.Application {
         Button loginBtn = new Button("Είσοδος");
 
         loginBtn.setOnAction(e -> {
-    LoginController controller = new LoginController(dataManager);
-    loggedInUser = controller.handleLogin(userField.getText(), passField.getText());
+            LoginController controller = new LoginController(dataManager);
+            loggedInUser = controller.handleLogin(userField.getText(), passField.getText());
 
-    if (loggedInUser != null) {
+            if (loggedInUser != null) {
+                
+                if (loggedInUser.getFollowedDocuments() == null) {
+                    loggedInUser.setFollowedDocuments(new java.util.ArrayList<>());
+                }
+
                 StringBuilder notifications = new StringBuilder();
                 for (String followedTitle : loggedInUser.getFollowedDocuments()) {
                     for (Document doc : dataManager.getDocuments()) {
-                        if (doc.getTitle().equals(followedTitle)) {
+                        
+                        if (doc.getTitle() != null && doc.getTitle().equals(followedTitle)) {
                             int lastSeenVersion = loggedInUser.getSeenVersionForDocument(followedTitle);
 
                             if (lastSeenVersion == 0) {
-                                
                                 loggedInUser.updateSeenVersionForDocument(followedTitle, doc.getCurrentVersionNumber());
                                 continue;
                             }
 
-                            if (doc.getCurrentVersionNumber() <= lastSeenVersion) {
-                                continue;
+                            if (doc.getCurrentVersionNumber() > lastSeenVersion) {
+                                notifications.append("• ").append(followedTitle)
+                                             .append(" (Νέα Έκδοση: v").append(doc.getCurrentVersionNumber())
+                                             .append(", προηγούμενη: v").append(lastSeenVersion).append(")\n");
+                                loggedInUser.updateSeenVersionForDocument(followedTitle, doc.getCurrentVersionNumber());
                             }
- {
-                            notifications.append("• ").append(followedTitle)
-                                         .append(" (Νέα Έκδοση: v").append(doc.getCurrentVersionNumber())
-                                         .append(", προηγούμενη που είδατε: v").append(lastSeenVersion).append(")\n");
-                            loggedInUser.updateSeenVersionForDocument(followedTitle, doc.getCurrentVersionNumber());
-
-                        }
-                    }
-                }
+                        } 
+                    } 
+                } 
 
                 if (notifications.length() > 0) {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -81,11 +83,14 @@ public class App extends javafx.application.Application {
                     alert.setContentText(notifications.toString());
                     alert.showAndWait();
                 }
-        openDashboard(primaryStage);
-    }
-    
- }
-});
+                
+                // Τώρα η κλήση είναι στη σωστή σειρά
+                openDashboard(primaryStage);
+            } else {
+                // Προαιρετικό: Μήνυμα αποτυχίας αν τα στοιχεία είναι λάθος
+                new Alert(Alert.AlertType.ERROR, "Λάθος όνομα χρήστη ή κωδικός!").showAndWait();
+            }
+        });
 
         VBox layout = new VBox(10, label, userField, passField, loginBtn);
         layout.setAlignment(Pos.CENTER);
@@ -432,6 +437,7 @@ public class App extends javafx.application.Application {
 
         Scene scene = new Scene(root, 800, 600);
         stage.setScene(scene);
+        stage.show();
     } 
 
     

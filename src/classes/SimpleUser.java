@@ -5,6 +5,7 @@ public class SimpleUser extends User {
     
     public SimpleUser() {
         super();
+        this.setRole("Simple User");
     }
 
     public SimpleUser(String firstName, String lastName, String username, String password) {
