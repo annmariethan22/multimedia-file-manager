@@ -19,7 +19,7 @@ mvn test
 - To run the app (JavaFX runtime must be available on your system):
 
 ```bash
-mvn javafx:run
+mvn clean javafx:run
 ```
 
 or build a shaded jar and run it:
