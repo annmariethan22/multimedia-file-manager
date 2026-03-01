@@ -7,8 +7,8 @@
   "authorizedCategories" : [ ],
   "followedDocuments" : [ "4.48 Ψύχωση (4.48 Psychosis)", "Φαίδρας Έρως (Phaedra's Love)" ],
   "lastSeenDocumentVersions" : {
-    "4.48 Ψύχωση (4.48 Psychosis)" : 3,
-    "Φαίδρας Έρως (Phaedra's Love)" : 2
+    "4.48 Ψύχωση (4.48 Psychosis)" : 6,
+    "Φαίδρας Έρως (Phaedra's Love)" : 3
   }
 }, {
   "firstName" : "Απλός ",
@@ -36,7 +36,7 @@
   "username" : "madonna",
   "password" : "madonna123",
   "role" : "Author",
-  "authorizedCategories" : [ "Αρχαία Τραγωδία", "madonna's category" ],
+  "authorizedCategories" : [ "Αρχαία Τραγωδία" ],
   "followedDocuments" : [ ],
   "lastSeenDocumentVersions" : { }
 } ]
